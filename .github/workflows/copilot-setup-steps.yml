@@ -1,0 +1,38 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+      - .github/workflows/copilot-platform-setup.yml
+      - .github/copilot-platform.json
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+      - .github/workflows/copilot-platform-setup.yml
+      - .github/copilot-platform.json
+
+jobs:
+  # The job name must be exactly `copilot-setup-steps`
+  # so GitHub Copilot Cloud Agent can pick it up.
+  copilot-setup-steps:
+    uses: MassimoSassanelli-NTTDATA/mms-solution/.github/workflows/copilot-platform-setup.yml@main
+
+    with:
+      platform_repository: MassimoSassanelli-NTTDATA/mms-solution
+      platform_ref: main
+      platform_config_path: .github/copilot-platform.json
+      default_branch: develop
+
+      # Platform mode:
+      # Used for Epic/Story refinement, impact analysis and task generation.
+      # The agent should see the full platform landscape.
+      checkout_mode: all
+
+      # All repositories are checked out below:
+      # $GITHUB_WORKSPACE/mobile-maintenance-platform/
+      workspace_root: mms-solution
+
+    secrets:
+      MULTI_REPO_TOKEN: ${{ secrets.MULTI_REPO_TOKEN }}
