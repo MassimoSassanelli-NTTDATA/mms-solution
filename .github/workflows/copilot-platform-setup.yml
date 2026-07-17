@@ -327,4 +327,4 @@ jobs:
         run: |
           echo "## Copilot Workspace Context" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          cat WORKSPACE.md >> "$GITHUB_STEP_SUMMARY"
+          cat WORKSPACE.md | tee -a "$GITHUB_STEP_SUMMARY"
