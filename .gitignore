@@ -1,0 +1,7 @@
+# Component repositories — each is an independent Git project.
+# They are cloned into this workspace for cross-project visibility
+# but are NOT tracked by the workspace repo.
+
+/mobile-app/
+/maui-toolkit/
+/net-client-api/

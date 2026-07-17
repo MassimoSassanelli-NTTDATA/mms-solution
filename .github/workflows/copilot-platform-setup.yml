@@ -1,0 +1,330 @@
+name: Copilot Platform Multi-Repo Setup
+
+on:
+  workflow_call:
+    inputs:
+      platform_repository:
+        description: "Repository that contains the platform definition and reusable workflow, for example your-org/mobile-service-platform"
+        required: true
+        type: string
+      platform_ref:
+        description: "Branch, tag, or SHA of the platform repository that contains the manifest"
+        required: false
+        type: string
+        default: "main"
+      platform_config_path:
+        description: "Path to the platform manifest inside the platform repository"
+        required: false
+        type: string
+        default: ".github/copilot-platform.json"
+      default_branch:
+        description: "Fallback branch used when auto mode cannot find a matching branch"
+        required: false
+        type: string
+        default: "develop"
+      checkout_mode:
+        description: "dependency-closure or all"
+        required: false
+        type: string
+        default: "dependency-closure"
+      workspace_root:
+        description: "Root folder below $GITHUB_WORKSPACE where the platform workspace is created"
+        required: false
+        type: string
+        default: "mobile-service-platform"
+    secrets:
+      MULTI_REPO_TOKEN:
+        required: true
+
+jobs:
+  # The job name must be exactly `copilot-setup-steps` for GitHub Copilot setup steps.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      DEFAULT_BRANCH: ${{ inputs.default_branch }}
+      CHECKOUT_MODE: ${{ inputs.checkout_mode }}
+      WORKSPACE_ROOT: ${{ inputs.workspace_root }}
+      PLATFORM_REPOSITORY: ${{ inputs.platform_repository }}
+      PLATFORM_REF: ${{ inputs.platform_ref }}
+      PLATFORM_CONFIG_PATH: ${{ inputs.platform_config_path }}
+      CURRENT_REPOSITORY: ${{ github.repository }}
+      CURRENT_REPOSITORY_OWNER: ${{ github.repository_owner }}
+      CURRENT_REPOSITORY_NAME: ${{ github.event.repository.name }}
+
+    steps:
+      - name: Prepare workspace root
+        shell: bash
+        run: |
+          mkdir -p "$WORKSPACE_ROOT"
+
+      - name: Checkout current code repository below platform workspace root
+        uses: actions/checkout@v6
+        with:
+          path: ${{ inputs.workspace_root }}/${{ github.event.repository.name }}
+
+      - name: Checkout platform repository below platform workspace root
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ inputs.platform_repository }}
+          ref: ${{ inputs.platform_ref }}
+          path: ${{ inputs.workspace_root }}/.platform
+          token: ${{ secrets.MULTI_REPO_TOKEN }}
+
+      - name: Determine current branch
+        id: current
+        shell: bash
+        run: |
+          CURRENT_BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          echo "branch=${CURRENT_BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "CURRENT_BRANCH=${CURRENT_BRANCH}" >> "$GITHUB_ENV"
+
+      - name: Create checkout plan from platform manifest
+        shell: bash
+        working-directory: ${{ inputs.workspace_root }}
+        run: |
+          CONFIG_FILE=".platform/${PLATFORM_CONFIG_PATH}"
+
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "Platform config file not found: $CONFIG_FILE" >&2
+            exit 1
+          fi
+
+          python3 <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          config_file = Path('.platform') / os.environ['PLATFORM_CONFIG_PATH']
+          current_repo = os.environ['CURRENT_REPOSITORY_NAME']
+          default_owner = os.environ['CURRENT_REPOSITORY_OWNER']
+          mode = os.environ.get('CHECKOUT_MODE', 'dependency-closure')
+
+          config = json.loads(config_file.read_text(encoding='utf-8'))
+          platform = config.get('platform', {})
+          repos = config.get('repositories', {})
+
+          if not isinstance(platform, dict):
+              raise SystemExit('Invalid manifest: platform must be an object')
+          if not isinstance(repos, dict):
+              raise SystemExit('Invalid manifest: repositories must be an object')
+
+          platform.setdefault('name', os.environ.get('WORKSPACE_ROOT', 'platform'))
+          platform.setdefault('role', 'platform wrapper and governance repository')
+          platform.setdefault('description', '')
+
+          for name, meta in repos.items():
+              meta.setdefault('owner', default_owner)
+              meta.setdefault('type', 'code-repository')
+              meta.setdefault('role', 'platform sub-repository')
+              meta.setdefault('description', '')
+              meta.setdefault('branch', 'auto')
+              meta.setdefault('dependencies', [])
+              meta.setdefault('checkoutPath', name)
+              meta.setdefault('agentGuidance', [])
+
+          def visit(name, selected):
+              if name in selected:
+                  return
+              if name not in repos:
+                  raise SystemExit(f'Repository {name} is referenced but not defined in manifest')
+              selected.append(name)
+              for dep in repos[name].get('dependencies', []):
+                  visit(dep, selected)
+
+          if mode == 'all':
+              selected = list(repos.keys())
+          elif mode == 'dependency-closure':
+              if current_repo not in repos:
+                  raise SystemExit(
+                      f'Current repository {current_repo} is not defined under repositories in the platform manifest. '
+                      'Add it as a sub-repository or use checkout_mode=all.'
+                  )
+              selected = []
+              visit(current_repo, selected)
+          else:
+              raise SystemExit('Invalid checkout_mode. Supported values: dependency-closure, all')
+
+          reverse = {name: [] for name in repos}
+          for name, meta in repos.items():
+              for dep in meta.get('dependencies', []):
+                  reverse.setdefault(dep, []).append(name)
+
+          with open('checkout-plan.tsv', 'w', encoding='utf-8') as f:
+              for name in selected:
+                  meta = repos[name]
+                  deps = ','.join(meta.get('dependencies', []))
+                  guidance = ' | '.join(meta.get('agentGuidance', []))
+                  f.write('\t'.join([
+                      name,
+                      meta.get('owner', default_owner),
+                      meta.get('type', 'code-repository'),
+                      meta.get('role', 'platform sub-repository'),
+                      meta.get('branch', 'auto'),
+                      meta.get('checkoutPath', name),
+                      deps,
+                      guidance
+                  ]) + '\n')
+
+          context = {
+              'platform': platform,
+              'currentRepository': current_repo,
+              'checkoutMode': mode,
+              'workspaceRoot': os.environ.get('WORKSPACE_ROOT', 'platform'),
+              'selectedRepositories': selected,
+              'repositories': repos,
+              'reverseDependencies': reverse,
+              'rules': config.get('rules', {})
+          }
+          Path('workspace-config.generated.json').write_text(json.dumps(context, indent=2), encoding='utf-8')
+          PY
+
+      - name: Resolve branches and checkout dependency repositories
+        shell: bash
+        working-directory: ${{ inputs.workspace_root }}
+        env:
+          MULTI_REPO_TOKEN: ${{ secrets.MULTI_REPO_TOKEN }}
+        run: |
+          : > checkout-results.tsv
+
+          while IFS=$'\t' read -r REPO OWNER TYPE ROLE BRANCH_SPEC CHECKOUT_PATH DEPS GUIDANCE; do
+            FULL_REPO="${OWNER}/${REPO}"
+
+            if [ "$REPO" = "$CURRENT_REPOSITORY_NAME" ]; then
+              SELECTED_BRANCH="$CURRENT_BRANCH"
+              STATUS="current-repository"
+              echo -e "${REPO}\t${OWNER}\t${TYPE}\t${ROLE}\t${SELECTED_BRANCH}\t${STATUS}\t${CHECKOUT_PATH}\t${DEPS}\t${GUIDANCE}" >> checkout-results.tsv
+              continue
+            fi
+
+            if [ -z "$CHECKOUT_PATH" ]; then
+              CHECKOUT_PATH="$REPO"
+            fi
+
+            if [ -n "$BRANCH_SPEC" ] && [ "$BRANCH_SPEC" != "auto" ]; then
+              SELECTED_BRANCH="$BRANCH_SPEC"
+              STATUS="manifest-branch"
+            else
+              if git ls-remote --exit-code --heads "https://x-access-token:${MULTI_REPO_TOKEN}@github.com/${FULL_REPO}.git" "$CURRENT_BRANCH" >/dev/null 2>&1; then
+                SELECTED_BRANCH="$CURRENT_BRANCH"
+                STATUS="auto-current-branch"
+              else
+                SELECTED_BRANCH="$DEFAULT_BRANCH"
+                STATUS="fallback-${DEFAULT_BRANCH}"
+              fi
+            fi
+
+            echo "Checking out ${FULL_REPO}@${SELECTED_BRANCH} into ${CHECKOUT_PATH}"
+            git clone --depth 1 --branch "$SELECTED_BRANCH" "https://x-access-token:${MULTI_REPO_TOKEN}@github.com/${FULL_REPO}.git" "$CHECKOUT_PATH"
+            git -C "$CHECKOUT_PATH" remote set-url origin "https://github.com/${FULL_REPO}.git"
+
+            echo -e "${REPO}\t${OWNER}\t${TYPE}\t${ROLE}\t${SELECTED_BRANCH}\t${STATUS}\t${CHECKOUT_PATH}\t${DEPS}\t${GUIDANCE}" >> checkout-results.tsv
+          done < checkout-plan.tsv
+
+      - name: Generate WORKSPACE.md
+        shell: bash
+        working-directory: ${{ inputs.workspace_root }}
+        run: |
+          python3 <<'PY'
+          import json
+          from pathlib import Path
+
+          config = json.loads(Path('workspace-config.generated.json').read_text(encoding='utf-8'))
+          rows = []
+          for line in Path('checkout-results.tsv').read_text(encoding='utf-8').splitlines():
+              repo, owner, typ, role, branch, status, checkout_path, deps, guidance = line.split('\t')
+              rows.append({
+                  'repo': repo,
+                  'owner': owner,
+                  'type': typ,
+                  'role': role,
+                  'branch': branch,
+                  'status': status,
+                  'checkoutPath': checkout_path,
+                  'dependencies': [d for d in deps.split(',') if d],
+                  'guidance': [g.strip() for g in guidance.split(' | ') if g.strip()]
+              })
+
+          platform = config.get('platform', {})
+          reverse = config.get('reverseDependencies', {})
+          lines = []
+          lines.append('# Copilot Workspace Context')
+          lines.append('')
+          lines.append('## Platform Repository')
+          lines.append('')
+          lines.append(f"Name: `{platform.get('name', 'platform')}`")
+          lines.append(f"Role: {platform.get('role', 'platform wrapper and governance repository')}")
+          if platform.get('description'):
+              lines.append(f"Description: {platform.get('description')}")
+          lines.append('')
+          lines.append('The platform repository is the wrapper around this solution. It contains epics, stories, architecture, governance, reusable workflows, agent rules, and the workspace manifest. Product implementation lives in the listed code repositories.')
+          lines.append('')
+          lines.append('## Workspace Selection')
+          lines.append('')
+          lines.append(f"Workspace root: `{config.get('workspaceRoot')}`")
+          lines.append(f"Checkout mode: `{config.get('checkoutMode')}`")
+          lines.append(f"Current code repository: `{config.get('currentRepository')}`")
+          lines.append('')
+          lines.append('## Checked-Out Code Repositories')
+          lines.append('')
+          lines.append('| Repository | Checkout Path | Type | Role | Branch | Resolution | Dependencies |')
+          lines.append('|---|---|---|---|---|---|---|')
+          for r in rows:
+              deps = ', '.join(r['dependencies']) if r['dependencies'] else '-'
+              lines.append(f"| `{r['repo']}` | `{r['checkoutPath']}` | `{r['type']}` | `{r['role']}` | `{r['branch']}` | `{r['status']}` | {deps} |")
+
+          lines.append('')
+          lines.append('## Dependency Graph')
+          lines.append('')
+          for name, meta in config.get('repositories', {}).items():
+              deps = meta.get('dependencies', [])
+              role = meta.get('role', 'platform sub-repository')
+              if deps:
+                  lines.append(f"- `{name}` ({role}) depends on: " + ', '.join(f'`{d}`' for d in deps))
+              else:
+                  lines.append(f"- `{name}` ({role}) has no configured platform dependencies")
+
+          lines.append('')
+          lines.append('## Reverse Impact View')
+          lines.append('')
+          for name, consumers in reverse.items():
+              if consumers:
+                  lines.append(f"- Changes in `{name}` may affect: " + ', '.join(f'`{c}`' for c in consumers))
+              else:
+                  lines.append(f"- Changes in `{name}` have no configured downstream platform consumers")
+
+          lines.append('')
+          lines.append('## Repository-Specific Agent Guidance')
+          lines.append('')
+          any_guidance = False
+          for r in rows:
+              if r['guidance']:
+                  any_guidance = True
+                  lines.append(f"### `{r['repo']}`")
+                  lines.append('')
+                  for item in r['guidance']:
+                      lines.append(f"- {item}")
+                  lines.append('')
+          if not any_guidance:
+              lines.append('No repository-specific guidance configured.')
+
+          rules = config.get('rules', {})
+          if rules:
+              lines.append('')
+              lines.append('## Agent Rules')
+              lines.append('')
+              for key, value in rules.items():
+                  lines.append(f"- **{key}**: {value}")
+
+          Path('WORKSPACE.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
+
+      - name: Workspace Summary
+        shell: bash
+        working-directory: ${{ inputs.workspace_root }}
+        run: |
+          echo "## Copilot Workspace Context" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat WORKSPACE.md >> "$GITHUB_STEP_SUMMARY"
