@@ -6,7 +6,7 @@
     "description": "Owns epics, stories, architecture, ADRs, agent governance, and Copilot workspace configuration for the maintenance mobile solution. It does not contain product implementation code by default."
   },
   "repositories": {
-    "mobile-app": {
+    "mms-app": {
       "type": "mobile-application",
       "role": "maintenance mobile application repository",
       "description": "Implements maintenance-specific mobile app features and user workflows.",
