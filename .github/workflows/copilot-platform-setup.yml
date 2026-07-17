@@ -155,7 +155,8 @@ jobs:
           with open('checkout-plan.tsv', 'w', encoding='utf-8') as f:
               for name in selected:
                   meta = repos[name]
-                  deps = ','.join(meta.get('dependencies', []))
+                  # Keep a non-empty placeholder so bash read with tab IFS does not collapse columns.
+                  deps = ','.join(meta.get('dependencies', [])) or '-'
                   guidance = ' | '.join(meta.get('agentGuidance', []))
                   f.write('\t'.join([
                       name,
@@ -235,6 +236,7 @@ jobs:
           rows = []
           for line in Path('checkout-results.tsv').read_text(encoding='utf-8').splitlines():
               repo, owner, typ, role, branch, status, checkout_path, deps, guidance = line.split('\t')
+              dependencies = [] if deps == '-' else [d for d in deps.split(',') if d]
               rows.append({
                   'repo': repo,
                   'owner': owner,
@@ -243,7 +245,7 @@ jobs:
                   'branch': branch,
                   'status': status,
                   'checkoutPath': checkout_path,
-                  'dependencies': [d for d in deps.split(',') if d],
+                'dependencies': dependencies,
                   'guidance': [g.strip() for g in guidance.split(' | ') if g.strip()]
               })
 
