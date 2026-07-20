@@ -158,12 +158,25 @@ jobs:
           lines += ['', '## Source of Truth', '', '- GitHub Issues, Sub-Issues and PRs are authoritative.', '- STORY_INDEX.md is a synchronized agent view.', '- REPOSITORY_CONTEXT.md is generated at runtime from the platform manifest.']
           Path('WORKSPACE.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
-          rlines = ['# Repository Context', '', 'This file is generated at runtime from `.github/copilot-platform.json` and tells agents which sub-repository instructions, skills, ADRs and docs must be read.', '']
+          rlines = ['# Repository Context', '', 'This file is generated at runtime from `.github/copilot-platform.json` and tells agents which sub-repository instructions, skills, ADRs and docs must be read, plus the platform rules and per-repository agent guidance they must follow.', '']
+          platform_rules = context.get('rules', {})
+          if platform_rules:
+              rlines += ['## Platform Rules', '']
+              for key, value in platform_rules.items():
+                  rlines.append(f'- **{key}**: {value}')
+              rlines.append('')
           for repo in context.get('selectedRepositories', []):
               meta = context['repositories'][repo]
               checkout = meta.get('checkoutPath', repo)
               ctx = meta.get('context', {})
-              rlines += [f'## {repo}', '', f'Role: {meta.get("role", "")}', f'Checkout path: `{checkout}`', '', '### Required Agent Instructions']
+              rlines += [f'## {repo}', '', f'Role: {meta.get("role", "")}', f'Checkout path: `{checkout}`', '']
+              guidance = meta.get('agentGuidance', [])
+              if guidance:
+                  rlines.append('### Agent Guidance')
+                  for item in guidance:
+                      rlines.append(f'- {item}')
+                  rlines.append('')
+              rlines.append('### Required Agent Instructions')
               for item in ctx.get('agentInstructions', []):
                   rlines.append(f'- `{checkout}/{item}`')
               rlines.append('')
