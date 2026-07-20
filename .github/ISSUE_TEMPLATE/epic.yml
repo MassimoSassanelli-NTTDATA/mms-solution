@@ -1,0 +1,5 @@
+name: Epic
+description: Product-level epic
+title: "Epic: "
+labels:
+  - type:epic

@@ -11,11 +11,33 @@
       "role": "maintenance mobile application repository",
       "description": "Implements maintenance-specific mobile app features and user workflows.",
       "branch": "auto",
-      "checkoutPath": "mobile-app",
+      "checkoutPath": "mms-app",
       "dependencies": [
         "maui-toolkit",
         "net-client-api"
       ],
+      "context": {
+        "agentInstructions": [
+          "AGENTS.md"
+        ],
+        "skills": [
+          ".github/skills/mms-app/skill.md"
+        ],
+        "architectureDocs": [
+          "docs/architecture.md",
+          "docs/navigation.md",
+          "docs/testing.md"
+        ],
+        "adrs": [
+          "adrs/"
+        ],
+        "buildCommands": [
+          "dotnet build"
+        ],
+        "testCommands": [
+          "dotnet test"
+        ]
+      },
       "agentGuidance": [
         "Use this repository as the primary implementation target when the issue belongs to the service mobile app.",
         "Before creating new UI or app logic, inspect shared dependencies for reusable capabilities.",
@@ -31,6 +53,29 @@
       "dependencies": [
         "net-client-api"
       ],
+      "context": {
+        "agentInstructions": [
+          "AGENTS.md"
+        ],
+        "skills": [
+          ".github/skills/maui-toolkit/skill.md"
+        ],
+        "architectureDocs": [
+          "docs/controls.md",
+          "docs/theming.md",
+          "docs/navigation.md",
+          "docs/component-guidelines.md"
+        ],
+        "adrs": [
+          "adrs/"
+        ],
+        "buildCommands": [
+          "dotnet build"
+        ],
+        "testCommands": [
+          "dotnet test"
+        ]
+      },
       "agentGuidance": [
         "Reuse existing controls, styles, and patterns before creating app-local UI components.",
         "Do not introduce dependencies from this repository to concrete mobile app repositories."
@@ -43,6 +88,28 @@
       "branch": "auto",
       "checkoutPath": "net-client-api",
       "dependencies": [],
+      "context": {
+        "agentInstructions": [
+          "AGENTS.md"
+        ],
+        "skills": [
+          ".github/skills/net-client-api/skill.md"
+        ],
+        "architectureDocs": [
+          "docs/api-guidelines.md",
+          "docs/dto-guidelines.md",
+          "docs/testing.md"
+        ],
+        "adrs": [
+          "adrs/"
+        ],
+        "buildCommands": [
+          "dotnet build"
+        ],
+        "testCommands": [
+          "dotnet test"
+        ]
+      },
       "agentGuidance": [
         "Do not duplicate API contracts in consuming repositories.",
         "Higher-level repositories may depend on this repository, but this repository must not depend on app or UI toolkit repositories."

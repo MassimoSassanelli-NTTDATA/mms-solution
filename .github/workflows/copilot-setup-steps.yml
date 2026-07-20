@@ -7,11 +7,17 @@ on:
       - .github/workflows/copilot-setup-steps.yml
       - .github/workflows/copilot-platform-setup.yml
       - .github/copilot-platform.json
+      - .github/prompts/**
+      - docs/process/**
+      - docs/stories/**
   pull_request:
     paths:
       - .github/workflows/copilot-setup-steps.yml
       - .github/workflows/copilot-platform-setup.yml
       - .github/copilot-platform.json
+      - .github/prompts/**
+      - docs/process/**
+      - docs/stories/**
 
 jobs:
   # The job name must be exactly `copilot-setup-steps`
@@ -31,7 +37,7 @@ jobs:
       checkout_mode: all
 
       # All repositories are checked out below:
-      # $GITHUB_WORKSPACE/mobile-maintenance-platform/
+      # $GITHUB_WORKSPACE/mms-solution/
       workspace_root: mms-solution
 
     secrets:

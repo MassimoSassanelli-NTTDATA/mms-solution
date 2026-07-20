@@ -1,0 +1,1 @@
+Story validation report template.

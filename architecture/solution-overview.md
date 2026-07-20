@@ -7,7 +7,7 @@
 ## Code Repositories
 
 ```text
-mobile-app
+mms-app
  ├── maui-toolkit
  ├── net-client-api
 
@@ -23,8 +23,8 @@ net-client-api
 Allowed:
 
 ```text
-mobile-app -> maui-toolkit
-mobile-app -> net-client-api
+mms-app -> maui-toolkit
+mms-app -> net-client-api
 maui-toolkit -> net-client-api
 ```
 
@@ -32,6 +32,6 @@ Not allowed:
 
 ```text
 net-client-api -> maui-toolkit
-net-client-api -> mobile-app
-maui-toolkit -> mobile-app
+net-client-api -> mms-app
+maui-toolkit -> mms-app
 ```

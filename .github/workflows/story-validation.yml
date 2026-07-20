@@ -1,0 +1,24 @@
+name: Story Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      story_branch:
+        required: true
+        type: string
+      default_branch:
+        required: false
+        default: develop
+        type: string
+
+jobs:
+  validate-story:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - name: Story validation placeholder
+        run: |
+          echo "Use copilot-platform-setup.yml and REPOSITORY_CONTEXT.md to validate story branches, repo-specific rules, builds and tests."

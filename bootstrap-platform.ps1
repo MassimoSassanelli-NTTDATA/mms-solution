@@ -2,11 +2,11 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Owner = "MassimoSassanelli-NTTDATA",
 
-    [string]$Root = "mobile-maintenance-platform"
+    [string]$Root = "mms-solution"
 )
 
 $repositories = @(
-    "mobile-maintenance-app",
+    "mms-app",
     "maui-toolkit",
     "net-client-api"
 )

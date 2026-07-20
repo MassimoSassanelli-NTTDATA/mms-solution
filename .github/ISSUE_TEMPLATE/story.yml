@@ -1,0 +1,10 @@
+name: Story
+description: Platform-level story
+title: "Story: "
+labels:
+  - type:story
+body:
+  - type: input
+    id: story-branch
+    attributes:
+      label: Story Branch
