@@ -1,0 +1,140 @@
+name: Create Tasks From Story
+
+# Creates implementation tasks in the target code repositories, links each task
+# as a sub-issue of the parent platform story, applies status/type/repo labels
+# and moves the story to `status:refined`.
+#
+# Requires MULTI_REPO_TOKEN (writes issues across repositories).
+
+on:
+  workflow_dispatch:
+    inputs:
+      story_issue_number:
+        description: Story issue number in the platform repository
+        required: true
+        type: string
+      tasks_json:
+        description: >-
+          JSON array of tasks. Each item:
+          {"repo","title","body","priority?","labels?":[]}.
+          Example: [{"repo":"net-client-api","title":"Add X client","body":"...","priority":"p2","labels":["area:api"]}]
+        required: true
+        type: string
+
+jobs:
+  create-tasks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create tasks and link as sub-issues
+        uses: actions/github-script@v7
+        env:
+          STORY_NUMBER: ${{ inputs.story_issue_number }}
+          TASKS_JSON: ${{ inputs.tasks_json }}
+        with:
+          github-token: ${{ secrets.MULTI_REPO_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const owner = context.repo.owner;
+            const platformRepo = context.repo.repo;
+            const storyNumber = Number(process.env.STORY_NUMBER);
+
+            let tasks;
+            try {
+              tasks = JSON.parse(process.env.TASKS_JSON);
+            } catch (e) {
+              core.setFailed('Invalid tasks_json: ' + e.message);
+              return;
+            }
+            if (!Array.isArray(tasks) || tasks.length === 0) {
+              core.setFailed('tasks_json must be a non-empty JSON array.');
+              return;
+            }
+
+            const cfg = JSON.parse(fs.readFileSync('.github/copilot-platform.json', 'utf8'));
+            const validRepos = Object.keys(cfg.repositories || {});
+
+            // Validate the story exists.
+            let story;
+            try {
+              story = await github.rest.issues.get({ owner, repo: platformRepo, issue_number: storyNumber });
+            } catch (e) {
+              core.setFailed(`Story #${storyNumber} not found in ${owner}/${platformRepo}: ${e.message}`);
+              return;
+            }
+
+            const created = [];
+            for (const t of tasks) {
+              if (!t.repo || !validRepos.includes(t.repo)) {
+                core.warning(`Skipping task with unknown repo "${t.repo}" (valid: ${validRepos.join(', ')}).`);
+                continue;
+              }
+              if (!t.title) {
+                core.warning('Skipping task without a title.');
+                continue;
+              }
+
+              const labels = ['type:task', `repo:${t.repo}`, 'status:ready'];
+              if (t.priority) labels.push(`priority:${t.priority}`);
+              if (Array.isArray(t.labels)) labels.push(...t.labels);
+
+              const body =
+                (t.body || '') +
+                `\n\n---\nParent story: ${owner}/${platformRepo}#${storyNumber}`;
+
+              const issue = await github.rest.issues.create({
+                owner,
+                repo: t.repo,
+                title: t.title,
+                body,
+                labels,
+              });
+              created.push({ repo: t.repo, number: issue.data.number, id: issue.data.id, url: issue.data.html_url });
+
+              // Attach as a sub-issue of the parent story.
+              try {
+                await github.request(
+                  'POST /repos/{owner}/{repo}/issues/{issue_number}/sub_issues',
+                  {
+                    owner,
+                    repo: platformRepo,
+                    issue_number: storyNumber,
+                    sub_issue_id: issue.data.id,
+                    headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+                  }
+                );
+              } catch (e) {
+                core.warning(`Sub-issue link failed for ${issue.data.html_url}: ${e.message}`);
+              }
+            }
+
+            if (created.length === 0) {
+              core.setFailed('No tasks were created. Check repo names and titles in tasks_json.');
+              return;
+            }
+
+            // Move the story to status:refined (remove any other status labels first).
+            const currentStatus = story.data.labels
+              .map((l) => l.name || l)
+              .filter((n) => n.startsWith('status:'));
+            for (const s of currentStatus) {
+              if (s !== 'status:refined') {
+                await github.rest.issues
+                  .removeLabel({ owner, repo: platformRepo, issue_number: storyNumber, name: s })
+                  .catch(() => {});
+              }
+            }
+            await github.rest.issues.addLabels({
+              owner,
+              repo: platformRepo,
+              issue_number: storyNumber,
+              labels: ['status:refined'],
+            });
+
+            let md = `## Created ${created.length} task(s) for story #${storyNumber}\n\n`;
+            md += '| Repository | Task | Link |\n|---|---|---|\n';
+            for (const c of created) md += `| \`${c.repo}\` | #${c.number} | ${c.url} |\n`;
+            await core.summary.addRaw(md).write();

@@ -1,0 +1,78 @@
+name: Issue Status Guard
+
+# Enforces the status model on platform-repository issues:
+#   * exactly one active `status:*` label per issue
+#   * only allowed transitions between states
+# Invalid transitions are reverted and explained in a comment.
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  guard:
+    if: startsWith(github.event.label.name, 'status:')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Validate status transition
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const added = context.payload.label.name;
+            const issue = context.payload.issue;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const number = issue.number;
+
+            // Allowed transitions: from -> [permitted next states].
+            const allowed = {
+              'status:idea':        ['status:refined', 'status:blocked'],
+              'status:refined':     ['status:ready', 'status:idea', 'status:blocked'],
+              'status:ready':       ['status:in-progress', 'status:refined', 'status:blocked'],
+              'status:in-progress': ['status:in-review', 'status:ready', 'status:blocked'],
+              'status:blocked':     ['status:ready', 'status:in-progress', 'status:refined'],
+              'status:in-review':   ['status:validated', 'status:in-progress', 'status:blocked'],
+              'status:validated':   ['status:done', 'status:in-progress'],
+              'status:done':        [],
+            };
+
+            const current = issue.labels
+              .map((l) => l.name || l)
+              .filter((n) => n.startsWith('status:'));
+            const from = current.filter((n) => n !== added);
+
+            // First status ever assigned: nothing to validate.
+            if (from.length === 0) {
+              core.info(`Initial status "${added}" accepted.`);
+              return;
+            }
+
+            // Exactly one previous status: validate the transition.
+            if (from.length === 1) {
+              const prev = from[0];
+              const permitted = allowed[prev] || [];
+              if (!permitted.includes(added)) {
+                await github.rest.issues
+                  .removeLabel({ owner, repo, issue_number: number, name: added })
+                  .catch(() => {});
+                const list = permitted.map((p) => '`' + p + '`').join(', ') || 'none (terminal state)';
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: number,
+                  body: `⚠️ Invalid status transition \`${prev}\` → \`${added}\`.\n\nAllowed from \`${prev}\`: ${list}.`,
+                });
+                core.warning(`Reverted invalid transition ${prev} -> ${added}.`);
+                return;
+              }
+            }
+
+            // Valid transition (or drift with multiple statuses): keep only `added`.
+            for (const s of from) {
+              await github.rest.issues
+                .removeLabel({ owner, repo, issue_number: number, name: s })
+                .catch(() => {});
+            }
+            core.info(`Status set to "${added}".`);

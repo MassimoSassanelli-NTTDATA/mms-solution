@@ -9,3 +9,9 @@ Conflict rule: platform instructions control orchestration and dependency direct
 
 
 Prioritize the current repository's local `AGENTS.md`, skills, ADRs and docs over platform-level implementation assumptions.
+
+## Status Labels
+Move the task to `status:in-progress` when you start. Open the pull request with a
+closing reference (`Closes #<task-number>`) so the **PR Task Status** workflow can
+move it to `status:in-review` and then `status:done` on merge. See
+[docs/process/label-model.md](../../docs/process/label-model.md).

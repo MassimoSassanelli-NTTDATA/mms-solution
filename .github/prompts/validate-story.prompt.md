@@ -9,3 +9,9 @@ Conflict rule: platform instructions control orchestration and dependency direct
 
 
 Validation must include branch alignment, build/test checks, acceptance criteria coverage, sub-issue synchronization and repository-specific rule compliance.
+
+## Status Labels
+Validation applies once the story is at `status:validated` (all task sub-issues
+done; derived by the **Story Status Rollup** workflow). After a successful
+validation, set the story to `status:done`. See
+[docs/process/label-model.md](../../docs/process/label-model.md).

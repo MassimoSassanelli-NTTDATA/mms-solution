@@ -1,0 +1,93 @@
+# Canonical label catalog for the mobile maintenance platform.
+#
+# Applied to the platform repository AND all code repositories listed in
+# .github/copilot-platform.json by the "Sync Labels" workflow
+# (.github/workflows/sync-labels.yml).
+#
+# Label groups:
+#   status:*   process state (exactly ONE active per issue, enforced by the status guard)
+#   type:*     issue kind (epic / story / task)
+#   repo:*     owning code repository of a task
+#   priority:* optional priority
+#   area:*     optional functional area
+#
+# Colors are 6-digit hex without the leading '#'.
+labels:
+  # --- Process status (single active status enforced by Issue Status Guard) ---
+  - name: "status:idea"
+    color: "ededed"
+    description: "Raw idea / story candidate, not yet refined"
+  - name: "status:refined"
+    color: "c5def5"
+    description: "Story refined; tasks created and linked as sub-issues"
+  - name: "status:ready"
+    color: "bfd4f2"
+    description: "Ready to be picked up for implementation"
+  - name: "status:in-progress"
+    color: "1d76db"
+    description: "Implementation in progress"
+  - name: "status:blocked"
+    color: "b60205"
+    description: "Blocked; see comments for the blocker"
+  - name: "status:in-review"
+    color: "fbca04"
+    description: "Pull request open and under review"
+  - name: "status:validated"
+    color: "8250df"
+    description: "All tasks done; story validated across repositories"
+  - name: "status:done"
+    color: "2da44e"
+    description: "Completed and merged"
+
+  # --- Issue type ---
+  - name: "type:epic"
+    color: "6f42c1"
+    description: "Product-level epic (platform repository)"
+  - name: "type:story"
+    color: "9f6ee5"
+    description: "Platform-level story (platform repository)"
+  - name: "type:task"
+    color: "0052cc"
+    description: "Implementation task (code repository)"
+
+  # --- Owning code repository (tasks) ---
+  - name: "repo:mms-app"
+    color: "d93f0b"
+    description: "Task belongs to the mms-app repository"
+  - name: "repo:maui-toolkit"
+    color: "e99695"
+    description: "Task belongs to the maui-toolkit repository"
+  - name: "repo:net-client-api"
+    color: "006b75"
+    description: "Task belongs to the net-client-api repository"
+
+  # --- Priority (optional) ---
+  - name: "priority:p0"
+    color: "b60205"
+    description: "Critical"
+  - name: "priority:p1"
+    color: "d93f0b"
+    description: "High"
+  - name: "priority:p2"
+    color: "fbca04"
+    description: "Medium"
+  - name: "priority:p3"
+    color: "0e8a16"
+    description: "Low"
+
+  # --- Functional area (optional) ---
+  - name: "area:api"
+    color: "1d76db"
+    description: "Backend API clients, DTOs, contracts"
+  - name: "area:ui"
+    color: "c5def5"
+    description: "UI / controls / theming"
+  - name: "area:sync"
+    color: "5319e7"
+    description: "Data sync / offline"
+  - name: "area:infra"
+    color: "555555"
+    description: "Build, CI/CD, tooling"
+  - name: "area:docs"
+    color: "bfd4f2"
+    description: "Documentation / process"

@@ -1,0 +1,86 @@
+name: PR Task Status (reusable)
+
+# Reusable workflow that moves a task issue through the review states based on
+# the pull request that implements it. Call it from a code repository:
+#
+#   # .github/workflows/pr-task-status.yml (in mms-app / maui-toolkit / net-client-api)
+#   name: PR Task Status
+#   on:
+#     pull_request:
+#       types: [opened, reopened, ready_for_review, closed]
+#   jobs:
+#     status:
+#       uses: MassimoSassanelli-NTTDATA/mms-solution/.github/workflows/pr-task-status.yml@main
+#       secrets: inherit
+#
+# The PR must reference its task issue with a closing keyword, e.g.
+# "Closes #123" (task issue in the same code repository).
+#
+#   PR opened / reopened / ready_for_review -> task status:in-review
+#   PR merged                               -> task status:done
+#
+# The parent story is rolled up separately by the "Story Status Rollup" workflow
+# on the platform repository.
+
+on:
+  workflow_call:
+
+jobs:
+  pr-task-status:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Update linked task status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info('No pull_request in context; nothing to do.');
+              return;
+            }
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const text = `${pr.body || ''} ${pr.title || ''}`;
+            const re = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
+            const nums = [...text.matchAll(re)].map((m) => Number(m[1]));
+            const unique = [...new Set(nums)];
+            if (unique.length === 0) {
+              core.info('No "Closes #<n>" task reference found in the PR.');
+              return;
+            }
+
+            const action = context.payload.action;
+            const opened = ['opened', 'reopened', 'ready_for_review'].includes(action);
+            const merged = action === 'closed' && pr.merged === true;
+
+            const target = merged ? 'status:done' : opened ? 'status:in-review' : null;
+            if (!target) {
+              core.info(`PR action "${action}" (merged=${pr.merged}) does not change task status.`);
+              return;
+            }
+
+            for (const n of unique) {
+              let issue;
+              try {
+                issue = await github.rest.issues.get({ owner, repo, issue_number: n });
+              } catch (e) {
+                continue;
+              }
+              const labels = issue.data.labels.map((l) => l.name || l);
+              if (!labels.includes('type:task')) continue;
+
+              for (const s of labels.filter((x) => x.startsWith('status:'))) {
+                if (s !== target) {
+                  await github.rest.issues
+                    .removeLabel({ owner, repo, issue_number: n, name: s })
+                    .catch(() => {});
+                }
+              }
+              await github.rest.issues.addLabels({ owner, repo, issue_number: n, labels: [target] });
+              core.notice(`Task #${n} -> ${target}`);
+            }

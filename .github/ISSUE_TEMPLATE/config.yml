@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Process documentation
+    url: https://github.com/MassimoSassanelli-NTTDATA/mms-solution/blob/main/docs/process/label-model.md
+    about: Label model, status flow and workflow automation for the platform.

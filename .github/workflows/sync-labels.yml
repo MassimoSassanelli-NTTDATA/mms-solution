@@ -1,0 +1,64 @@
+name: Sync Labels
+
+# Applies the canonical label catalog (.github/labels.yml) to the platform
+# repository and every code repository declared in copilot-platform.json.
+# Requires MULTI_REPO_TOKEN because it writes labels across repositories.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.yml
+      - .github/copilot-platform.json
+      - .github/workflows/sync-labels.yml
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.MULTI_REPO_TOKEN }}
+      OWNER: ${{ github.repository_owner }}
+      PLATFORM_REPO: ${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Apply labels to platform and code repositories
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          try:
+              import yaml
+          except ImportError:
+              subprocess.run([sys.executable, "-m", "pip", "install", "pyyaml"], check=True)
+              import yaml
+
+          owner = os.environ["OWNER"]
+          platform_repo = os.environ["PLATFORM_REPO"]
+
+          labels = yaml.safe_load(open(".github/labels.yml", encoding="utf-8"))["labels"]
+          cfg = json.load(open(".github/copilot-platform.json", encoding="utf-8"))
+
+          repos = [platform_repo] + list(cfg.get("repositories", {}).keys())
+          seen = []
+          for r in repos:
+              if r not in seen:
+                  seen.append(r)
+
+          for repo in seen:
+              full = f"{owner}/{repo}"
+              print(f"::group::Syncing labels to {full}")
+              for lbl in labels:
+                  color = lbl["color"].lstrip("#")
+                  subprocess.run(
+                      ["gh", "label", "create", lbl["name"],
+                       "--color", color,
+                       "--description", lbl.get("description", ""),
+                       "--force", "-R", full],
+                      check=False,
+                  )
+              print("::endgroup::")
+          PY

@@ -13,3 +13,7 @@ Conflict rule: platform instructions control orchestration and dependency direct
 - Affected repositories
 - Required sub-repository context to inspect during refinement
 - Open questions, risks, spike and architecture-review recommendations
+
+## GitHub Issue
+Create the story as a GitHub issue using the `Story` issue template. It starts at
+`type:story` + `status:idea`. See [docs/process/label-model.md](../../docs/process/label-model.md).

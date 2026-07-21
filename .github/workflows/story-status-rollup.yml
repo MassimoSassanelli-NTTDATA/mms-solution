@@ -1,0 +1,120 @@
+name: Story Status Rollup
+
+# Derives a story's status from the state of its task sub-issues and applies the
+# matching `status:*` label. Runs on demand for one story, or hourly for every
+# open story. This is the automated counterpart to the `sync-story` prompt.
+#
+# Requires MULTI_REPO_TOKEN because task sub-issues live in code repositories.
+#
+# Rollup rules (first match wins):
+#   all tasks closed / status:done            -> status:validated
+#   any task in-progress/in-review/blocked
+#     or any task closed (partial)            -> status:in-progress
+#   all tasks status:ready                    -> status:ready
+#   otherwise                                 -> status:refined
+# Stories already at status:done are left untouched.
+
+on:
+  workflow_dispatch:
+    inputs:
+      story_issue_number:
+        description: Story issue number to roll up (omit to roll up all open stories)
+        required: false
+        type: string
+  schedule:
+    - cron: '17 * * * *'
+
+jobs:
+  rollup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Roll up story status from sub-issues
+        uses: actions/github-script@v7
+        env:
+          STORY_NUMBER: ${{ inputs.story_issue_number }}
+        with:
+          github-token: ${{ secrets.MULTI_REPO_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const ACTIVE = ['status:in-progress', 'status:in-review', 'status:blocked'];
+
+            async function rollup(number) {
+              let subs;
+              try {
+                subs = await github.paginate(
+                  'GET /repos/{owner}/{repo}/issues/{issue_number}/sub_issues',
+                  { owner, repo, issue_number: number, headers: { 'X-GitHub-Api-Version': '2022-11-28' } }
+                );
+              } catch (e) {
+                core.warning(`Cannot read sub-issues of story #${number}: ${e.message}`);
+                return;
+              }
+              if (!subs.length) {
+                core.info(`Story #${number} has no sub-issues; skipping.`);
+                return;
+              }
+
+              const items = subs.map((s) => ({
+                state: s.state,
+                labels: (s.labels || []).map((l) => l.name || l),
+              }));
+
+              const isDone = (s) => s.state === 'closed' || s.labels.includes('status:done');
+              const allDone = items.every(isDone);
+              const anyActive = items.some(
+                (s) => s.state === 'closed' || s.labels.some((n) => ACTIVE.includes(n))
+              );
+              const allReady = items.every((s) => s.labels.includes('status:ready'));
+
+              let target = 'status:refined';
+              if (allDone) target = 'status:validated';
+              else if (anyActive) target = 'status:in-progress';
+              else if (allReady) target = 'status:ready';
+
+              const story = await github.rest.issues.get({ owner, repo, issue_number: number });
+              const cur = story.data.labels
+                .map((l) => l.name || l)
+                .filter((n) => n.startsWith('status:'));
+
+              if (cur.includes('status:done')) {
+                core.info(`Story #${number} is done; leaving untouched.`);
+                return;
+              }
+              if (cur.length === 1 && cur[0] === target) {
+                core.info(`Story #${number} already at ${target}.`);
+                return;
+              }
+
+              // Apply authoritatively: clear other status labels, then set target.
+              for (const s of cur) {
+                if (s !== target) {
+                  await github.rest.issues
+                    .removeLabel({ owner, repo, issue_number: number, name: s })
+                    .catch(() => {});
+                }
+              }
+              await github.rest.issues.addLabels({ owner, repo, issue_number: number, labels: [target] });
+              core.notice(`Story #${number} -> ${target}`);
+            }
+
+            const single = process.env.STORY_NUMBER;
+            if (single) {
+              await rollup(Number(single));
+              return;
+            }
+
+            // Scheduled: roll up all open stories.
+            const stories = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              labels: 'type:story',
+              per_page: 100,
+            });
+            for (const s of stories) {
+              await rollup(s.number);
+            }

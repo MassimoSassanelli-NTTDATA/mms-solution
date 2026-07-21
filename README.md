@@ -34,6 +34,13 @@ Jeder Prompt liest zuerst `REPOSITORY_CONTEXT.md`, die relevanten lokalen `AGENT
 | `/validate-story` | Story über alle Repos prüfen (Branch, Build/Test, Akzeptanzkriterien) | Nein |
 | `/sync-story` | GitHub Issues/Sub-Issues/PRs ↔ `STORY_INDEX.md` abgleichen | Nein |
 
+## Status & Labels (GitHub Issues)
+
+Der Prozessstatus wird über `status:*`-Labels auf den GitHub-Issues geführt und ist
+weitgehend automatisiert (Label-Sync, Task-Erzeugung, Transition-Guard,
+Story-Rollup, PR→Task-Status). Label-Katalog, erlaubte Übergänge und Workflows:
+[docs/process/label-model.md](docs/process/label-model.md).
+
 ## Instruktionslogik (Schichten)
 
 1. **Plattform-Manifest** [.github/copilot-platform.json](.github/copilot-platform.json) – entscheidet über Orchestrierung, Ownership, Issue-Hierarchie und **Abhängigkeitsrichtung**.

@@ -21,3 +21,18 @@ Conflict rule: platform instructions control orchestration and dependency direct
 - Sub-issue attachment plan
 - Story index update
 - Context files read per repository
+
+## Issue & Label Automation
+Create the tasks and links by running the **Create Tasks From Story** workflow
+instead of manual steps:
+
+```bash
+gh workflow run create-tasks-from-story.yml \
+  -f story_issue_number=<story-number> \
+  -f tasks_json='[{"repo":"net-client-api","title":"...","body":"...","priority":"p2","labels":["area:api"]}]'
+```
+
+This creates `type:task` issues in the target code repositories, attaches them as
+sub-issues of the story and moves the story to `status:refined`. Status labels and
+allowed transitions are defined in
+[docs/process/label-model.md](../../docs/process/label-model.md).
