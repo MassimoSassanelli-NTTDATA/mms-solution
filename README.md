@@ -23,7 +23,7 @@ Details: [docs/process/development-process.md](docs/process/development-process.
 ## Mit den Prompts entwickeln
 
 Prompts liegen in [.github/prompts/](.github/prompts) und werden in Copilot Chat als `/<name>` aufgerufen.
-Jeder Prompt liest zuerst `REPOSITORY_CONTEXT.md` und die lokalen `AGENTS.md`/Skills/ADRs der betroffenen Repos.
+Jeder Prompt liest zuerst `REPOSITORY_CONTEXT.md`, die relevanten lokalen `AGENTS.md`/ADRs der betroffenen Repos und die im Plattform-Repo gespiegelten Skills unter `.github/skills/_subrepo_*`.
 
 | Prompt | Zweck | Schreibt Code? |
 |---|---|---|
@@ -66,10 +66,11 @@ Regeln (`rules` im Manifest):
 
 ## Sub-Repo Instruktionen & Skills bearbeiten
 
-Die Plattform **dupliziert keine** Sub-Repo-Regeln – sie verweist nur darauf. So änderst du sie:
+Die Plattform behandelt Sub-Repo-Kontext weiterhin als Source of Truth im jeweiligen Sub-Repo, spiegelt Skills aber für den Agenten-Lauf lokal nach `.github/skills` (Prefix `_subrepo_`). So änderst du sie:
 
-1. Instruktion/Skill/ADR/Doc **im jeweiligen Sub-Repo** bearbeiten (z. B. dessen `AGENTS.md`, `.github/skills/<repo>/skill.md`, `adrs/`, `docs/`).
+1. Instruktion/Skill/ADR/Doc **im jeweiligen Sub-Repo** bearbeiten (z. B. dessen `AGENTS.md`, `.github/skills/*/SKILL.md`, `adrs/`, `docs/`).
 2. Den Pfad im Manifest unter `repositories.<repo>.context` registrieren (`agentInstructions`, `skills`, `architectureDocs`, `adrs`, `buildCommands`, `testCommands`).
-3. Beim nächsten Setup-Lauf erscheint der Eintrag automatisch in `REPOSITORY_CONTEXT.md` und wird von den Prompts gelesen.
+3. Nach Änderungen an Skills das Sync-Skript laufen lassen (direkt oder via Hook): `scripts/sync-subrepo-skills.ps1`.
+4. Beim nächsten Setup-Lauf erscheint der Eintrag automatisch in `REPOSITORY_CONTEXT.md`; die gespiegelten `_subrepo_`-Skills werden lokal vom Agenten geladen.
 
 > `REPOSITORY_CONTEXT.md` enthält pro Repo `role`, `checkoutPath`, die `context.*`-Listen und `agentGuidance` sowie die globalen `rules` als `## Platform Rules`. Ein neuer Skill/Doc wird nur sichtbar, wenn sein Pfad im `context` registriert ist.

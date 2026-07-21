@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# post-checkout receives:
+#   $1 previous HEAD
+#   $2 new HEAD
+#   $3 1 if branch checkout, 0 if file checkout
+if [ "$3" != "1" ]; then
+  exit 0
+fi
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$repo_root" ]; then
+  exit 0
+fi
+
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/sync-subrepo-skills.ps1" -Quiet
+elif command -v powershell >/dev/null 2>&1; then
+  powershell -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/sync-subrepo-skills.ps1" -Quiet
+else
+  echo "post-checkout: PowerShell not found, skipped syncing subrepo skills." >&2
+fi

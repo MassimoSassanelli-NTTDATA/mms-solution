@@ -4,7 +4,8 @@
 
 Each sub-repository owns its own implementation instructions, skills, ADRs, build commands and test commands.
 
-The platform repository does not duplicate those rules. It references them through `.github/copilot-platform.json`.
+The platform repository references repository-owned context through `.github/copilot-platform.json`.
+Sub-repository skills are additionally mirrored into `.github/skills` with the `_subrepo_` prefix by `scripts/sync-subrepo-skills.ps1` (usually triggered via Git hook).
 
 At runtime, the setup workflow generates `REPOSITORY_CONTEXT.md` from the `context` sections of the manifest.
 
