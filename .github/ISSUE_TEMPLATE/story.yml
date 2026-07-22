@@ -22,8 +22,8 @@ body:
     id: epic
     attributes:
       label: Parent Epic
-      description: "Reference the parent epic issue, e.g. #12"
-      placeholder: "#"
+      description: "Reference the parent epic issue, e.g. #42 – Epic title"
+      placeholder: "#42 – Epic title"
     validations:
       required: false
   - type: input
@@ -58,5 +58,17 @@ body:
     attributes:
       label: Open Questions
       description: Unknowns to resolve during refinement.
+    validations:
+      required: false
+  - type: textarea
+    id: hints
+    attributes:
+      label: Hinweise für die Umsetzung
+      description: >
+        Optionaler Kontext für das Refinement – keine Akzeptanzkriterien.
+        Technische Hinweise, Design-Referenzen, Einsatzbereiche.
+      placeholder: |
+        > Diese Hinweise sind **keine Akzeptanzkriterien** und dienen nur als Kontext für das Refinement.
+        - ...
     validations:
       required: false
