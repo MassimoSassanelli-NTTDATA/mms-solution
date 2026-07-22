@@ -20,9 +20,6 @@
         "agentInstructions": [
           "AGENTS.md"
         ],
-        "skills": [
-          ".github/skills/mms-app/skill.md"
-        ],
         "architectureDocs": [
           "docs/architecture.md",
           "docs/navigation.md",
@@ -57,9 +54,6 @@
         "agentInstructions": [
           "AGENTS.md"
         ],
-        "skills": [
-          ".github/skills/maui-toolkit/skill.md"
-        ],
         "architectureDocs": [
           "docs/controls.md",
           "docs/theming.md",
@@ -91,9 +85,6 @@
       "context": {
         "agentInstructions": [
           "AGENTS.md"
-        ],
-        "skills": [
-          ".github/skills/net-client-api/skill.md"
         ],
         "architectureDocs": [
           "docs/api-guidelines.md",

@@ -14,9 +14,13 @@ if [ -z "$repo_root" ]; then
 fi
 
 if command -v pwsh >/dev/null 2>&1; then
-  pwsh -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/sync-subrepo-skills.ps1" -Quiet
+  ps="pwsh"
 elif command -v powershell >/dev/null 2>&1; then
-  powershell -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/sync-subrepo-skills.ps1" -Quiet
+  ps="powershell"
 else
-  echo "post-checkout: PowerShell not found, skipped syncing subrepo skills." >&2
+  echo "post-checkout: PowerShell not found, skipped syncing subrepo skills and workspace context." >&2
+  exit 0
 fi
+
+"$ps" -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/sync-subrepo-skills.ps1" -Quiet
+"$ps" -NoProfile -ExecutionPolicy Bypass -File "$repo_root/scripts/generate-workspace-context.ps1" -RepoRoot "$repo_root" -Quiet -SkipValidation
