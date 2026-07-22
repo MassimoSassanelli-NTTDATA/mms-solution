@@ -1,8 +1,9 @@
 name: Create Tasks From Story
 
 # Creates implementation tasks in the target code repositories, links each task
-# as a sub-issue of the parent platform story, applies status/type/repo labels
-# and moves the story to `status:refined`.
+# as a sub-issue of the parent platform story, applies status/type labels on
+# task issues, applies repo labels on the story issue, and moves the story to
+# `status:refined`.
 #
 # Requires MULTI_REPO_TOKEN (writes issues across repositories).
 
@@ -17,7 +18,8 @@ on:
         description: >-
           JSON array of tasks. Each item:
           {"repo","title","body","priority?","labels?":[]}.
-          Example: [{"repo":"net-client-api","title":"Add X client","body":"...","priority":"p2","labels":["area:api"]}]
+          Pass the value from a file to avoid quoting issues:
+          gh workflow run create-tasks-from-story.yml -f story_issue_number=<n> -F tasks_json=@tasks.json
         required: true
         type: string
 
@@ -44,13 +46,18 @@ jobs:
 
             let tasks;
             try {
-              tasks = JSON.parse(process.env.TASKS_JSON);
+              // Strip a leading UTF-8 BOM (e.g. from PowerShell Set-Content -Encoding utf8).
+              const raw = (process.env.TASKS_JSON || '').replace(/^\uFEFF/, '');
+              tasks = JSON.parse(raw);
             } catch (e) {
-              core.setFailed('Invalid tasks_json: ' + e.message);
+              core.setFailed('Invalid tasks_json (must be valid JSON): ' + e.message);
               return;
             }
+            // Tolerate a single task object (PowerShell 5.1 ConvertTo-Json emits an
+            // object, not an array, when there is exactly one task).
+            if (tasks && !Array.isArray(tasks)) tasks = [tasks];
             if (!Array.isArray(tasks) || tasks.length === 0) {
-              core.setFailed('tasks_json must be a non-empty JSON array.');
+              core.setFailed('tasks_json must be a JSON array (or a single task object) with at least one task.');
               return;
             }
 
@@ -67,6 +74,7 @@ jobs:
             }
 
             const created = [];
+            const linkFailures = [];
             for (const t of tasks) {
               if (!t.repo || !validRepos.includes(t.repo)) {
                 core.warning(`Skipping task with unknown repo "${t.repo}" (valid: ${validRepos.join(', ')}).`);
@@ -77,9 +85,12 @@ jobs:
                 continue;
               }
 
-              const labels = ['type:task', `repo:${t.repo}`, 'status:ready'];
+              const labels = ['type:task', 'status:ready'];
               if (t.priority) labels.push(`priority:${t.priority}`);
-              if (Array.isArray(t.labels)) labels.push(...t.labels);
+              if (Array.isArray(t.labels)) {
+                // repo:* labels belong to the parent story, not task issues.
+                labels.push(...t.labels.filter((l) => typeof l === 'string' && !l.startsWith('repo:')));
+              }
 
               const body =
                 (t.body || '') +
@@ -107,14 +118,33 @@ jobs:
                   }
                 );
               } catch (e) {
-                core.warning(`Sub-issue link failed for ${issue.data.html_url}: ${e.message}`);
+                const failure = `${issue.data.html_url}: ${e.message}`;
+                linkFailures.push(failure);
+                core.warning(`Sub-issue link failed for ${failure}`);
               }
             }
 
             if (created.length === 0) {
-              core.setFailed('No tasks were created. Check repo names and titles in tasks_json.');
+              core.setFailed('No tasks were created. Check repo names and titles in the provided task file payload.');
               return;
             }
+
+            if (linkFailures.length > 0) {
+              let md = `## Partial success for story #${storyNumber}\n\n`;
+              md += `Created tasks: ${created.length}\n\n`;
+              md += `Sub-issue link failures: ${linkFailures.length}\n\n`;
+              md += '### Failed links\n';
+              for (const f of linkFailures) md += `- ${f}\n`;
+              await core.summary.addRaw(md).write();
+              core.setFailed(
+                `Created ${created.length} task(s), but ${linkFailures.length} sub-issue link(s) failed. Story status was not moved to status:refined.`
+              );
+              return;
+            }
+
+            // Collect unique affected repositories for story labels.
+            const affectedRepos = [...new Set(created.map((c) => c.repo))];
+            const repoLabels = affectedRepos.map((r) => `repo:${r}`);
 
             // Move the story to status:refined (remove any other status labels first).
             const currentStatus = story.data.labels
@@ -131,7 +161,7 @@ jobs:
               owner,
               repo: platformRepo,
               issue_number: storyNumber,
-              labels: ['status:refined'],
+              labels: ['status:refined', ...repoLabels],
             });
 
             let md = `## Created ${created.length} task(s) for story #${storyNumber}\n\n`;

@@ -13,7 +13,7 @@ is applied to the platform repository and all code repositories by the
 
 | Group | Labels | Rule |
 |---|---|---|
-| `status:*` | idea, refined, ready, in-progress, blocked, in-review, validated, done | Exactly **one** active per issue (enforced) |
+| `status:*` | idea, for-refinement, refined, ready, in-progress, blocked, in-review, validated, done | Exactly **one** active per issue (enforced) |
 | `type:*` | epic, story, task | Set by the issue template / task creation |
 | `repo:*` | mms-app, maui-toolkit, net-client-api | Owning code repository of a task |
 | `priority:*` | p0–p3 | Optional |
@@ -22,7 +22,7 @@ is applied to the platform repository and all code repositories by the
 ## Status flow
 
 ```text
-idea → refined → ready → in-progress → in-review → validated → done
+idea → for-refinement → refined → ready → in-progress → in-review → validated → done
                      ↘ blocked ↗ (from/return to active states)
 ```
 
@@ -30,7 +30,8 @@ Allowed transitions (enforced by the **Issue Status Guard**):
 
 | From | Allowed next |
 |---|---|
-| `status:idea` | refined, blocked |
+| `status:idea` | for-refinement, blocked |
+| `status:for-refinement` | idea, refined, blocked |
 | `status:refined` | ready, idea, blocked |
 | `status:ready` | in-progress, refined, blocked |
 | `status:in-progress` | in-review, ready, blocked |
@@ -55,25 +56,33 @@ Invalid label changes are automatically reverted with an explanatory comment.
 
 1. **discover-story** → a Story issue is created from the template with
    `type:story` + `status:idea`.
-2. **refine-story** → run **Create Tasks From Story** with the story number and a
-   task list. Tasks are created in the code repositories (`type:task`,
-   `repo:<name>`, `status:ready`), linked as sub-issues, and the story moves to
-   `status:refined`.
-3. **start-task** → set the task to `status:in-progress` and open a PR that
+2. **Manual** → User moves the story to `status:for-refinement` (no automation).
+3. **refine-story** → Agent verifies story is in `status:for-refinement`, then runs
+   **Create Tasks From Story** workflow. Tasks are created in the code repositories
+   (`type:task`, `status:ready`), linked as sub-issues. Story moves to `status:refined`
+   with `repo:<name>` labels for each affected repository.
+4. **start-task** → set the task to `status:in-progress` and open a PR that
    references the task with `Closes #<task>`.
-4. PR opened → **PR Task Status** sets the task to `status:in-review`.
-5. PR merged → the task moves to `status:done`.
-6. **Story Status Rollup** derives the story status; once all tasks are done the
+5. PR opened → **PR Task Status** sets the task to `status:in-review`.
+6. PR merged → the task moves to `status:done`.
+7. **Story Status Rollup** derives the story status; once all tasks are done the
    story becomes `status:validated`.
-7. **validate-story** → after validation the story is set to `status:done`.
+8. **validate-story** → after validation the story is set to `status:done`.
 
 ### `Create Tasks From Story` input example
+
+Write the tasks array to a JSON file and pass the file to the `tasks_json` input
+(`-F` reads the file content raw, avoiding shell quoting issues):
 
 ```json
 [
   { "repo": "net-client-api", "title": "Add work-order client", "body": "Refit client for /workorders", "priority": "p2", "labels": ["area:api"] },
   { "repo": "mms-app", "title": "Work-order list screen", "body": "CollectionView bound to work orders", "priority": "p2", "labels": ["area:ui"] }
 ]
+```
+
+```bash
+gh workflow run create-tasks-from-story.yml -f story_issue_number=<n> -F tasks_json=@tasks.json
 ```
 
 ### Enabling PR-based task status in a code repository
