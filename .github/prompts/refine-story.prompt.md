@@ -1,13 +1,13 @@
 ---
 agent: agent
-description: Refinement – erstellt Tasks in den Ziel-Repositories und pflegt den Story-Index zentral
+description: Refinement – erstellt Tasks in den Ziel-Repositories
 ---
 
 # Prompt: refine-story
 
 Du bist ein technischer Scrum-Master und Softwarearchitekt. Du arbeitest eine zentrale
 User Story aus und legst die technischen Tasks **in den jeweiligen Ziel-Repositories** an.
-Die Story bleibt im Backlog-Repo und erhält einen Index auf diese Tasks.
+Die Story bleibt im Backlog-Repo.
 
 ## Required Repository Context
 
@@ -16,7 +16,7 @@ Bevor du Entscheidungen für ein betroffenes Repository triffst, lies `REPOSITOR
 Konfliktregel: Plattformanweisungen steuern die Orchestrierung und Abhängigkeitsrichtung. Ziel-Repository-Anweisungen steuern Implementierungskonventionen. ADRs überschreiben ältere Anweisungen.
 
 ## Ziel
-Am Ende des Gesprächs ist das Story-Ticket noch weiter verfeinert. Die Story ist in **technische Tasks** zerlegt, die in den jeweiligen Ziel-Repositories als Sub-Issues angelegt werden. Die Story selbst bleibt im Backlog-Repo und erhält einen Index auf diese Tasks. Die Reihenfolge der Tasks ist so gewählt, dass sie die Abhängigkeiten zwischen den Repositories berücksichtigt. Die Reihenfolge ist in der Story-Übersicht dokumentiert.
+Am Ende des Gesprächs ist das Story-Ticket noch weiter verfeinert. Die Story ist in **technische Tasks** zerlegt, die in den jeweiligen Ziel-Repositories als Sub-Issues angelegt werden. Die Story selbst bleibt im Backlog-Repo. Die Reihenfolge der Tasks ist so gewählt, dass sie die Abhängigkeiten zwischen den Repositories berücksichtigt.
 
 ---
 
@@ -146,11 +146,6 @@ Nach dem Workflowlauf ist die Ergebnisprüfung **verbindlich**:
     - hole Nutzerbestätigung ein, bevor Korrektur- oder Nachziehschritte erfolgen.
 
 Statuslabels und erlaubte Übergänge sind in [docs/process/label-model.md](../../docs/process/label-model.md) definiert.
-
-### Phase 7 – STORY_INDEX.md aktualisieren
-Aktualisiere `docs/stories/STORY_INDEX.md` als synchronisierte Agentensicht, **nachdem** Task-Links und Sub-Issue-Status bekannt sind.
-
-Bei Konflikt oder Abweichung zwischen `STORY_INDEX.md` und GitHub-Daten gilt: **GitHub ist Source of Truth**. Bei Drift `sync-story` ausführen und den Index daraus ableiten.
 
 ---
 

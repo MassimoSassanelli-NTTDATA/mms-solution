@@ -155,7 +155,7 @@ jobs:
           for row in Path('checkout-results.tsv').read_text(encoding='utf-8').splitlines():
               repo, path, branch, status, deps = row.split('\t')
               lines.append(f'| `{repo}` | `{path}` | `{branch}` | `{status}` | {deps or "-"} |')
-          lines += ['', '## Source of Truth', '', '- GitHub Issues, Sub-Issues and PRs are authoritative.', '- STORY_INDEX.md is a synchronized agent view.', '- REPOSITORY_CONTEXT.md is generated at runtime from the platform manifest.']
+          lines += ['', '## Source of Truth', '', '- GitHub Issues, Sub-Issues and PRs are authoritative.', '- REPOSITORY_CONTEXT.md is generated at runtime from the platform manifest.']
           Path('WORKSPACE.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
           rlines = ['# Repository Context', '', 'This file is generated at runtime from `.github/copilot-platform.json` and tells agents which sub-repository instructions, skills, ADRs and docs must be read, plus the platform rules and per-repository agent guidance they must follow.', '']

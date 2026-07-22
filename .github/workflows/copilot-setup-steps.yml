@@ -9,7 +9,6 @@ on:
       - .github/copilot-platform.json
       - .github/prompts/**
       - docs/process/**
-      - docs/stories/**
   pull_request:
     paths:
       - .github/workflows/copilot-setup-steps.yml
@@ -17,7 +16,6 @@ on:
       - .github/copilot-platform.json
       - .github/prompts/**
       - docs/process/**
-      - docs/stories/**
 
 jobs:
   # The job name must be exactly `copilot-setup-steps`

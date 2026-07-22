@@ -2,8 +2,7 @@
 
 GitHub Issues are the operational backbone of the development process. Every epic,
 story and task is a GitHub Issue, and its position in the process is tracked with
-`status:*` labels. `STORY_INDEX.md` remains a derived, agent-maintained view;
-GitHub Issues, Sub-Issues and PRs stay the source of truth.
+`status:*` labels. GitHub Issues, Sub-Issues and PRs are the source of truth.
 
 ## Label groups
 
@@ -107,5 +106,5 @@ jobs:
 - **`MULTI_REPO_TOKEN`** secret must be present on the platform repository with
   `issues:write` (and read) scope on all code repositories. It is already used by
   the setup and validation workflows.
-- The organization must have **sub-issues** enabled (already used by
-  `story-index-validation.yml`).
+- The organization must have **sub-issues** enabled (used by
+  `create-tasks-from-story.yml` and `story-status-rollup.yml`).

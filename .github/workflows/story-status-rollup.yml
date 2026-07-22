@@ -2,7 +2,7 @@ name: Story Status Rollup
 
 # Derives a story's status from the state of its task sub-issues and applies the
 # matching `status:*` label. Runs on demand for one story, or hourly for every
-# open story. This is the automated counterpart to the `sync-story` prompt.
+# open story.
 #
 # Requires MULTI_REPO_TOKEN because task sub-issues live in code repositories.
 #

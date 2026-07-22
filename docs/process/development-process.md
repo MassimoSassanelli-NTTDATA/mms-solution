@@ -9,7 +9,6 @@ discover-story        (Story issue: type:story, status:idea)
   -> start-story
   -> start-task        (task status:in-progress -> PR -> status:in-review)
   -> validate-story    (all tasks done -> story status:validated -> status:done)
-  -> sync-story
   -> review
   -> merge             (task status:done)
 ```

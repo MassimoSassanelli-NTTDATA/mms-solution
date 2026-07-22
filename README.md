@@ -15,7 +15,7 @@ Governance-Details: [AGENTS.md](AGENTS.md) · [architecture/solution-overview.md
 
 ```text
 discover-story → refine-story → Tasks als Sub-Issues → Story-Branch
-              → start-story → start-task → validate-story → sync-story → review → merge
+              → start-story → start-task → validate-story → review → merge
 ```
 
 Details: [docs/process/development-process.md](docs/process/development-process.md)
@@ -28,11 +28,10 @@ Jeder Prompt liest zuerst `REPOSITORY_CONTEXT.md`, die relevanten lokalen `AGENT
 | Prompt | Zweck | Schreibt Code? |
 |---|---|---|
 | `/discover-story` | Rohe Idee → Story-Kandidat, betroffene Repos, offene Fragen | Nein |
-| `/refine-story` | Kandidat → fertige Story + Repo-spezifische Tasks (als Sub-Issues), aktualisiert `STORY_INDEX.md` | Nein |
+| `/refine-story` | Kandidat → fertige Story + Repo-spezifische Tasks (als Sub-Issues) | Nein |
 | `/start-story` | Fertige Tasks orchestrieren (prüft Sub-Issues + Story-Branch) | Nein |
 | `/start-task` | Genau **einen** Task im zuständigen Code-Repo umsetzen | Ja (im Sub-Repo) |
 | `/validate-story` | Story über alle Repos prüfen (Branch, Build/Test, Akzeptanzkriterien) | Nein |
-| `/sync-story` | GitHub Issues/Sub-Issues/PRs ↔ `STORY_INDEX.md` abgleichen | Nein |
 
 ## Status & Labels (GitHub Issues)
 
@@ -51,7 +50,6 @@ Bei Konflikt gilt: Plattform steuert *Orchestrierung*, Sub-Repo steuert *Umsetzu
 
 | Datei | Committet? | Wer pflegt sie |
 |---|---|---|
-| `STORY_INDEX.md` | **Ja** (versioniert) | Nur Agenten via `refine-story` / `sync-story`. GitHub ist Source of Truth, bei Drift gewinnt GitHub. |
 | `REPOSITORY_CONTEXT.md` | **Nein** (generiert) | Setup-Workflow aus dem Manifest. In `.gitignore`. |
 | `WORKSPACE.md` | **Nein** (generiert) | Setup-Workflow. |
 
