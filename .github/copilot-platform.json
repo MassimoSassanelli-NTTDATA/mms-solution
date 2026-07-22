@@ -21,9 +21,6 @@
           "AGENTS.md"
         ],
         "architectureDocs": [
-          "docs/architecture.md",
-          "docs/navigation.md",
-          "docs/testing.md"
         ],
         "adrs": [
           "adrs/"
@@ -55,10 +52,6 @@
           "AGENTS.md"
         ],
         "architectureDocs": [
-          "docs/controls.md",
-          "docs/theming.md",
-          "docs/navigation.md",
-          "docs/component-guidelines.md"
         ],
         "adrs": [
           "adrs/"
@@ -87,9 +80,6 @@
           "AGENTS.md"
         ],
         "architectureDocs": [
-          "docs/api-guidelines.md",
-          "docs/dto-guidelines.md",
-          "docs/testing.md"
         ],
         "adrs": [
           "adrs/"
