@@ -73,6 +73,7 @@ Präsentiere dem Nutzer eine geordnete Übersicht aller geplanten Tasks **bevor*
 
 ```
 Task 1 von N | Repo: <repo> | Priorität: <p0–p3>
+Ziel-Repository: <repo>
 Titel: ...
 Was passiert: ...
 Hängt ab von: – / Task X (frozen | released)
@@ -80,6 +81,8 @@ Schnittstelle zu: – / <repo> / <Contract-Name>
 
 Task 2 von N | ...
 ```
+
+Fordere den Nutzer auf, das angegebene Ziel-Repository je Task vor der Zustimmung zu prüfen und bei Bedarf korrigieren zu lassen.
 
 Erkläre kurz die gewählte Reihenfolge und Granularität. Weise bei Cross-Repository-Abhängigkeiten explizit aus, ob der Consumer bereits ab Contract-**Freeze** starten darf oder erst nach dem **Release** des Producers.
 
