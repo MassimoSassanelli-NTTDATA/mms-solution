@@ -70,8 +70,8 @@
     },
     "net-client-api": {
       "type": "foundation",
-      "role": ".NET backend client API, contracts, DTOs, and service access repository",
-      "description": "Source of truth for backend API clients, DTOs, and contracts used by mobile repositories.",
+      "role": ".NET client API framework repository",
+      "description": "Provides a reusable company-wide framework for building HTTP/REST/OData .NET client APIs.",
       "branch": "auto",
       "checkoutPath": "net-client-api",
       "dependencies": [],
@@ -92,7 +92,8 @@
         ]
       },
       "agentGuidance": [
-        "Do not duplicate API contracts in consuming repositories.",
+        "Treat this repository as framework-only and keep it implementation-agnostic.",
+        "Use it to provide reusable abstractions, helpers, and patterns for .NET client API creation.",
         "Higher-level repositories may depend on this repository, but this repository must not depend on app or UI toolkit repositories."
       ]
     }
