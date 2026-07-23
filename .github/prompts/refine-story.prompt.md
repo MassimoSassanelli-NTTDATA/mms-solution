@@ -61,6 +61,13 @@ Frage **nicht** nach:
 - Dingen, die aus AGENTS.md, Skills oder ADRs eindeutig hervorgehen
 - Implementierungsdetails, die der Umsetzungsagent selbst entscheiden kann
 
+**Cross-Repository-Check (immer prüfen):**
+Wenn die Story mehrere Repositories betrifft, kläre – falls aus AGENTS.md/ADRs nicht eindeutig ableitbar – zusätzlich:
+- Gibt es Schnittstellen zwischen den betroffenen Repositories (Interface, DTO, HTTP-Route, Message-Contract, NuGet-Package)?
+- Wer definiert den Contract, und ist ein separater Release-/Publish-Schritt nötig (z. B. NuGet-Publish, bevor der Consumer konsumieren kann)?
+
+Schnittstellen-Tasks werden gemäß [../../docs/process/task-orchestration.md](../../docs/process/task-orchestration.md) modelliert (Contract-Task → Implementation-Task → optional Release-Task → Consumer-Task).
+
 ### Phase 4 – Zusammenfassung präsentieren
 Präsentiere dem Nutzer eine geordnete Übersicht aller geplanten Tasks **bevor** etwas erstellt wird:
 
@@ -68,12 +75,13 @@ Präsentiere dem Nutzer eine geordnete Übersicht aller geplanten Tasks **bevor*
 Task 1 von N | Repo: <repo> | Priorität: <p0–p3>
 Titel: ...
 Was passiert: ...
-Hängt ab von: – / Task X
+Hängt ab von: – / Task X (frozen | released)
+Schnittstelle zu: – / <repo> / <Contract-Name>
 
 Task 2 von N | ...
 ```
 
-Erkläre kurz die gewählte Reihenfolge und Granularität.
+Erkläre kurz die gewählte Reihenfolge und Granularität. Weise bei Cross-Repository-Abhängigkeiten explizit aus, ob der Consumer bereits ab Contract-**Freeze** starten darf oder erst nach dem **Release** des Producers.
 
 ### Phase 5 – Bestätigung abwarten
 Frage explizit: **„Soll ich die Tasks so anlegen?"**
@@ -181,3 +189,15 @@ Schritt X von N – hängt ab von: [Task-Titel / –]
 ### Test Expectations
 Welche Tests müssen bestehen oder neu geschrieben werden?
 ```
+
+**Optionaler Abschnitt** – nur einfügen, wenn der Task eine Schnittstelle zu einem anderen Repository hat (Interface, DTO, HTTP-Route, Message-Contract, NuGet-Package):
+
+```markdown
+### Cross-Repository Interface
+- **Provided to / Consumed from:** <repo>
+- **Contract:** <Interface / DTO / Route / Package-Name>
+- **Contract-Status:** draft | frozen | released
+- **Related Task:** #<nr> (Producer bzw. Consumer)
+```
+
+Die Semantik von `Contract-Status` und das Verhältnis zu `Hängt ab von` ist in [../../docs/process/task-orchestration.md](../../docs/process/task-orchestration.md) definiert.
