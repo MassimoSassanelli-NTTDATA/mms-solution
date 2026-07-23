@@ -1,0 +1,31 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "MMS Platform"
+    },
+    {
+      "path": "net-client-api",
+      "name": "Net Client API"
+    },
+    {
+      "path": "mms-app",
+      "name": "MMS App"
+    },
+    {
+      "path": "maui-toolkit",
+      "name": "MAUI Toolkit"
+    }
+  ],
+  "settings": {
+    "chat.agentSkillsLocations": {
+      ".agents/skills": true,
+      ".github/skills": true,
+      ".claude/skills": true,
+      "~/.agents/skills": true,
+      "~/.copilot/skills": true,
+      "~/.claude/skills": true,
+      "~/.vscode/extensions/synapsevscode.synapse-1.25.0/copilot/skills": true
+    }
+  }
+}
