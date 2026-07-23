@@ -9,6 +9,14 @@ planning or implementing any change.
 
 This repository contains a complete maintenance solution named **Mobile Maintenance Simplified**. Technicians use this solution an especially designed mobile client to view, edit, and create maintenance data such as work orders, assets, and maintenance schedules on mobile devices.
 
+## Skill Usage
+
+- When a request clearly falls within the scope of an existing skill, read that skill first.
+- Use the skill as a router to narrow the search space and identify the most relevant implementation files.
+- After reading the skill, verify the guidance against the actual code by reading only the few most relevant files.
+- Do not rely on the skill alone when code generation or code changes are requested; the actual implementation remains the source of truth.
+- Prefer a direct code-first entry only when no suitable skill exists or when the request targets a specific file, symbol, error, or local runtime behavior.
+
 ## Agent Context
 
 For implementation rules, repository roles, and cross-repository guidance,
