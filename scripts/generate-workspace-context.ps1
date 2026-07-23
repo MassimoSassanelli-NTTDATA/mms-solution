@@ -243,7 +243,7 @@ foreach ($name in $selected) {
     $rc.Add("Checkout path: $(Format-Code $checkout)")
     $rc.Add('')
 
-    if ($meta.agentGuidance.Count -gt 0) {
+    if (@($meta.agentGuidance).Count -gt 0) {
         $rc.Add('### Agent Guidance')
         foreach ($item in $meta.agentGuidance) { $rc.Add("- $item") }
         $rc.Add('')

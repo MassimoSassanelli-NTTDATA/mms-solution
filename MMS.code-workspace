@@ -15,6 +15,10 @@
     {
       "path": "maui-toolkit",
       "name": "MAUI Toolkit"
+    },
+    {
+      "path": "toolkit2",
+      "name": "Toolkit 2"
     }
   ],
   "settings": {
